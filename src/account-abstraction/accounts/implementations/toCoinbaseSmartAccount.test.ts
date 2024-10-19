@@ -627,13 +627,17 @@ test('behavior: 7702 designation', async () => {
     account: eoa,
     contractAddress: implementationAddress,
     delegate: sponsor,
+    // ↑ As we will be executing the 7702 transaction with the `sponsor` account,
+    // we will mark the `sponsor` as the delegate.
   })
 
-  // Send the 7702 designation transaction (to the EOA) with `initialize` calldata.
+  // Send the 7702 designation transaction with `initialize` calldata.
   await writeContract(client, {
     account: sponsor,
+    //       ↑ Execute the transaction with the `sponsor` account.
     abi: account.abi,
     address: account.address,
+    //       ↑ Send transaction to the `account` address.
     args: [[pad(owner.address)]],
     functionName: 'initialize',
     authorizationList: [authorization],
