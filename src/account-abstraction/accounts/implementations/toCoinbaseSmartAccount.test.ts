@@ -4,13 +4,16 @@ import { bundlerMainnet } from '../../../../test/src/bundler.js'
 import { accounts, typedData } from '../../../../test/src/constants.js'
 import { privateKeyToAccount } from '../../../accounts/privateKeyToAccount.js'
 import {
+  getTransactionReceipt,
   mine,
   sendTransaction,
+  simulateContract,
   verifyHash,
   verifyMessage,
   verifyTypedData,
   writeContract,
 } from '../../../actions/index.js'
+import { signAuthorization } from '../../../experimental/index.js'
 import {
   encodeFunctionData,
   keccak256,
@@ -18,6 +21,7 @@ import {
   parseEther,
 } from '../../../utils/index.js'
 import { estimateUserOperationGas } from '../../actions/bundler/estimateUserOperationGas.js'
+import { getUserOperationReceipt } from '../../actions/bundler/getUserOperationReceipt.js'
 import { prepareUserOperation } from '../../actions/bundler/prepareUserOperation.js'
 import { sendUserOperation } from '../../actions/bundler/sendUserOperation.js'
 import { toWebAuthnAccount } from '../toWebAuthnAccount.js'
@@ -603,6 +607,50 @@ describe('wrapSignature', () => {
       `"0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000002800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000170000000000000000000000000000000000000000000000000000000000000001949fc7c88032b9fcb5f6efc7a7b8c63668eae9871b765e23123bb473ff57aa831a7c0d9276168ebcc29f2875a0239cffdf2a9cd1c2007c5c77c071db9264df1d000000000000000000000000000000000000000000000000000000000000002549960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97630500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008a7b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a2273496a396e6164474850596759334b7156384f7a4a666c726275504b474f716d59576f4d57516869467773222c226f726967696e223a2268747470733a2f2f7369676e2e636f696e626173652e636f6d222c2263726f73734f726967696e223a66616c73657d00000000000000000000000000000000000000000000"`,
     )
   })
+})
+
+test('behavior: 7702 designation', async () => {
+  const eoa = privateKeyToAccount(accounts[1].privateKey)
+  const sponsor = privateKeyToAccount(accounts[9].privateKey)
+
+  const account = await toCoinbaseSmartAccount({
+    address: eoa.address,
+    client,
+    owners: [owner],
+  })
+
+  const implementationAddress = '0x000100abaad02f1cfC8Bbe32bD5a564817339E72'
+
+  const authorization = await signAuthorization(client, {
+    account: eoa,
+    contractAddress: implementationAddress,
+    delegate: sponsor,
+  })
+
+  await writeContract(client, {
+    account: sponsor,
+    abi: account.abi,
+    address: account.address,
+    args: [[pad(owner.address)]],
+    functionName: 'initialize',
+    authorizationList: [authorization],
+  })
+
+  await mine(client, {
+    blocks: 1,
+  })
+
+  const hash = await sendUserOperation(bundlerClient, {
+    account,
+    calls: [
+      {
+        to: '0x0000000000000000000000000000000000000000',
+        value: 1n,
+      },
+    ],
+  })
+
+  expect(hash).toBeDefined()
 })
 
 describe('smoke', async () => {
