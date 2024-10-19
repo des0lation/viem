@@ -613,6 +613,7 @@ test('behavior: 7702 designation', async () => {
   const eoa = privateKeyToAccount(accounts[1].privateKey)
   const sponsor = privateKeyToAccount(accounts[9].privateKey)
 
+  // Initialize Smart Account
   const account = await toCoinbaseSmartAccount({
     address: eoa.address,
     client,
@@ -621,12 +622,14 @@ test('behavior: 7702 designation', async () => {
 
   const implementationAddress = '0x000100abaad02f1cfC8Bbe32bD5a564817339E72'
 
+  // Sign Authorization to designate the CB SCA implementation to the EOA
   const authorization = await signAuthorization(client, {
     account: eoa,
     contractAddress: implementationAddress,
     delegate: sponsor,
   })
 
+  // Send the 7702 designation transaction (to the EOA) with `initialize` calldata.
   await writeContract(client, {
     account: sponsor,
     abi: account.abi,
