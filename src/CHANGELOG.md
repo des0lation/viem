@@ -1,5 +1,11 @@
 # viem
 
+## 2.21.33
+
+### Patch Changes
+
+- [#2897](https://github.com/wevm/viem/pull/2897) [`40514f93c9147c26cc47f25421adcec8230d6c40`](https://github.com/wevm/viem/commit/40514f93c9147c26cc47f25421adcec8230d6c40) Thanks [@catbutter](https://github.com/catbutter)! - Added DustBoy IoT chain.
+
 ## 2.21.32
 
 ### Patch Changes
